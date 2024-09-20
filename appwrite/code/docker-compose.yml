@@ -16,6 +16,7 @@ services:
       - --providers.docker.constraints=Label(`traefik.constraint-label-stack`,`appwrite`)
       - --entrypoints.appwrite_web.address=:80
       - --entrypoints.appwrite_websecure.address=:443
+      - --accesslog=true
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -26,9 +27,10 @@ services:
     networks:
       - gateway
       - appwrite
+      - runtimes
 
   appwrite:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     <<: *x-logging
     restart: unless-stopped
     networks:
@@ -150,9 +152,32 @@ services:
       - _APP_MIGRATIONS_FIREBASE_CLIENT_ID
       - _APP_MIGRATIONS_FIREBASE_CLIENT_SECRET
       - _APP_ASSISTANT_OPENAI_API_KEY
+      - _APP_CONSOLE_COUNTRIES_DENYLIST
+
+  appwrite-console:
+    <<: *x-logging
+    container_name: appwrite-console
+    image: appwrite/console:5.0.12
+    restart: unless-stopped
+    networks:
+      - appwrite
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=appwrite"
+      - "traefik.docker.network=appwrite"
+      - "traefik.http.services.appwrite_console.loadbalancer.server.port=80"
+      #ws
+      - traefik.http.routers.appwrite_console_http.entrypoints=appwrite_web
+      - traefik.http.routers.appwrite_console_http.rule=PathPrefix(`/console`)
+      - traefik.http.routers.appwrite_console_http.service=appwrite_console
+      # wss
+      - traefik.http.routers.appwrite_console_https.entrypoints=appwrite_websecure
+      - traefik.http.routers.appwrite_console_https.rule=PathPrefix(`/console`)
+      - traefik.http.routers.appwrite_console_https.service=appwrite_console
+      - traefik.http.routers.appwrite_console_https.tls=true
 
   appwrite-realtime:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: realtime
     <<: *x-logging
     restart: unless-stopped
@@ -195,7 +220,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-audits:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-audits
     <<: *x-logging
     restart: unless-stopped
@@ -221,7 +246,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-webhooks:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-webhooks
     <<: *x-logging
     restart: unless-stopped
@@ -249,7 +274,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-deletes:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-deletes
     <<: *x-logging
     restart: unless-stopped
@@ -304,7 +329,7 @@ services:
       - _APP_EXECUTOR_HOST
 
   appwrite-worker-databases:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-databases
     <<: *x-logging
     restart: unless-stopped
@@ -330,7 +355,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-builds:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-builds
     <<: *x-logging
     restart: unless-stopped
@@ -393,7 +418,7 @@ services:
       - _APP_STORAGE_WASABI_BUCKET
 
   appwrite-worker-certificates:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-certificates
     <<: *x-logging
     restart: unless-stopped
@@ -426,7 +451,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-functions:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-functions
     <<: *x-logging
     restart: unless-stopped
@@ -462,7 +487,7 @@ services:
       - _APP_LOGGING_PROVIDER
 
   appwrite-worker-mails:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-mails
     <<: *x-logging
     restart: unless-stopped
@@ -494,7 +519,7 @@ services:
       - _APP_LOGGING_CONFIG
 
   appwrite-worker-messaging:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-messaging
     <<: *x-logging
     restart: unless-stopped
@@ -544,7 +569,7 @@ services:
       - _APP_STORAGE_WASABI_BUCKET
 
   appwrite-worker-migrations:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-migrations
     <<: *x-logging
     restart: unless-stopped
@@ -574,7 +599,7 @@ services:
       - _APP_MIGRATIONS_FIREBASE_CLIENT_SECRET
 
   appwrite-task-maintenance:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: maintenance
     <<: *x-logging
     restart: unless-stopped
@@ -607,7 +632,7 @@ services:
       - _APP_MAINTENANCE_RETENTION_SCHEDULES
 
   appwrite-worker-usage:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-usage
     <<: *x-logging
     restart: unless-stopped
@@ -635,7 +660,7 @@ services:
       - _APP_USAGE_AGGREGATION_INTERVAL
 
   appwrite-worker-usage-dump:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: worker-usage-dump
     <<: *x-logging
     networks:
@@ -662,7 +687,7 @@ services:
       - _APP_USAGE_AGGREGATION_INTERVAL
 
   appwrite-task-scheduler-functions:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: schedule-functions
     <<: *x-logging
     restart: unless-stopped
@@ -686,7 +711,7 @@ services:
       - _APP_DB_PASS
 
   appwrite-task-scheduler-messages:
-    image: appwrite/appwrite:1.5.11
+    image: appwrite/appwrite:1.6.0
     entrypoint: schedule-messages
     <<: *x-logging
     restart: unless-stopped
