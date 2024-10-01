@@ -71,7 +71,7 @@ services:
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro
 
   auth:
-    image: supabase/gotrue:latest
+    image: supabase/gotrue:v2.162.0
     depends_on:
       db:
         # Disable this if you are using an external Postgres database
@@ -260,7 +260,7 @@ services:
       - ./volumes/storage:/var/lib/storage:z
 
   meta:
-    image: supabase/postgres-meta:latest
+    image: supabase/postgres-meta:v0.84.0
     depends_on:
       db:
         # Disable this if you are using an external Postgres database
@@ -277,7 +277,7 @@ services:
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
   functions:
-    image: supabase/edge-runtime:latest
+    image: supabase/edge-runtime:v1.58.11
     restart: unless-stopped
     depends_on:
       analytics:
@@ -338,7 +338,7 @@ services:
 
   # Comment out everything below this point if you are using an external Postgres database
   db:
-    image: supabase/postgres:latest
+    image: supabase/postgres:15.1.1.94
     healthcheck:
       test: pg_isready -U postgres -h localhost
       interval: 5s
